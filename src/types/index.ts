@@ -1,6 +1,6 @@
 export type GameMode = 'basic' | 'reverse';
 
-export type GamePhase = 'home' | 'memorize' | 'choose' | 'result';
+export type GamePhase = 'home' | 'memorize' | 'ready' | 'choose' | 'result';
 
 export type Difficulty = 'easy' | 'medium' | 'hard';
 
@@ -8,8 +8,9 @@ export interface DifficultyConfig {
   shownCount: number;        // 암기 단계에서 보여주는 단어 수
   wordDurationMs: number;    // 단어 1개 표시 시간(ms)
   decoyCount: number;        // 선택지에 섞이는 안 보여준 단어 수 (리버스 모드의 정답 개수)
-  maxLives: number;          // 허용 오답 횟수 (목숨)
+  maxLives: number;          // 허용 오답 횟수 (생명)
   reverseMultiplier: number; // 리버스 모드 점수 배율
+  baseScore: number;         // 난이도별 기본 점수
 }
 
 export const DIFFICULTY_CONFIG: Record<Difficulty, DifficultyConfig> = {
@@ -19,6 +20,7 @@ export const DIFFICULTY_CONFIG: Record<Difficulty, DifficultyConfig> = {
     decoyCount: 2,
     maxLives: 3,
     reverseMultiplier: 1.2,
+    baseScore: 800,
   },
   medium: {
     shownCount: 10,
@@ -26,6 +28,7 @@ export const DIFFICULTY_CONFIG: Record<Difficulty, DifficultyConfig> = {
     decoyCount: 2,
     maxLives: 2,
     reverseMultiplier: 1.4,
+    baseScore: 1000,
   },
   hard: {
     shownCount: 12,
@@ -33,6 +36,7 @@ export const DIFFICULTY_CONFIG: Record<Difficulty, DifficultyConfig> = {
     decoyCount: 3,
     maxLives: 1,
     reverseMultiplier: 1.6,
+    baseScore: 1200,
   },
 };
 

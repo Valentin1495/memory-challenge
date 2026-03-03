@@ -25,8 +25,8 @@ export function Leaderboard() {
     : null;
 
   return (
-    <div className="min-h-screen flex flex-col">
-      <header className="p-4 flex items-center gap-4">
+    <div className="min-h-screen flex flex-col safe-top safe-bottom">
+      <header className="p-4 flex items-center">
         <button
           onClick={() => navigate('/')}
           className="text-white/80 hover:text-white"
@@ -35,7 +35,8 @@ export function Leaderboard() {
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
           </svg>
         </button>
-        <h1 className="text-xl font-bold text-white">리더보드</h1>
+        <h1 className="flex-1 text-center text-xl font-bold text-white">리더보드</h1>
+        <div className="w-6" />
       </header>
 
       {/* 기간 탭 */}

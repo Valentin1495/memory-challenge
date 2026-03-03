@@ -12,4 +12,24 @@ body {
 
 #root {
   min-height: 100vh;
+  min-height: 100dvh;
+}
+
+/* iOS 노치/Dynamic Island safe area */
+.safe-top {
+  padding-top: env(safe-area-inset-top);
+}
+.safe-top-home {
+  padding-top: calc(env(safe-area-inset-top) - 20px);
+}
+
+.safe-bottom {
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+/* iOS 입력창 포커스 시 자동 확대 방지 (font-size < 16px 이면 iOS가 확대함) */
+input,
+textarea,
+select {
+  font-size: 16px;
 }

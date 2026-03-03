@@ -202,14 +202,22 @@ export const useGameStore = create<GameStore>((set, get) => ({
   },
 
   getScore: () => {
-    const { mode, difficulty, wrongCount, reviewCount, startTime, endTime } = get();
+    const { mode, difficulty, wrongCount, reviewCount, startTime, endTime, isSuccess, correctSelections } = get();
     const config = DIFFICULTY_CONFIG[difficulty];
 
-    let score = 1000;
-    score -= wrongCount * 100;
-    score -= reviewCount * 150;
+    // 목표 정답 수: basic=보여준 단어 수, reverse=디코이 수
+    const targetCount = mode === 'basic' ? config.shownCount : config.decoyCount;
+    // 정답 1개당 점수 (성공 시 정답 수 × 정답당 점수 = baseScore)
+    const pointsPerCorrect = config.baseScore / targetCount;
+
+    let score = correctSelections.length * pointsPerCorrect;  // 정답 수 반영
+    score -= wrongCount * 100;                                 // 오답 패널티
+    score -= reviewCount * 150;                               // 다시보기 패널티
     if (startTime && endTime) {
-      score -= Math.floor((endTime - startTime) / 1000);
+      score -= Math.floor((endTime - startTime) / 1000) * 5; // 시간 패널티 (5점/초)
+    }
+    if (isSuccess === false) {
+      score -= 200;                                           // 실패 추가 패널티
     }
     score = Math.max(0, score);
 

@@ -5,11 +5,25 @@ const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
+function generateUUID(): string {
+  // crypto.randomUUID()는 HTTPS(보안 컨텍스트)에서만 동작
+  // HTTP(로컬 IP) 환경을 위한 폴백
+  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+    return crypto.randomUUID();
+  }
+  // RFC 4122 v4 UUID 폴백
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
+    const r = (Math.random() * 16) | 0;
+    const v = c === 'x' ? r : (r & 0x3) | 0x8;
+    return v.toString(16);
+  });
+}
+
 export function getGuestId(): string {
   const stored = localStorage.getItem('guestId');
   if (stored) return stored;
-  
-  const newId = crypto.randomUUID();
+
+  const newId = generateUUID();
   localStorage.setItem('guestId', newId);
   return newId;
 }

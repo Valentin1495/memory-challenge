@@ -8,14 +8,21 @@ import { DIFFICULTY_CONFIG } from '../types';
 export function Result() {
   const navigate = useNavigate();
   const store = useGameStore();
-  const { mode, category, nickname, wrongCount, reviewCount, getScore, missedWordsSnapshot, isSuccess, resetGame } = store;
+  const { mode, nickname, wrongCount, reviewCount, getScore, isSuccess, resetGame, startGame } = store;
   const { submitScore } = useLeaderboard({ period: 'daily' });
   const [submitState, setSubmitState] = useState<'idle' | 'submitting' | 'done' | 'error'>('idle');
   const hasSubmitted = useRef(false);
 
   const score = getScore();
-  const missedWords = missedWordsSnapshot;
   const timeMs = store.startTime && store.endTime ? store.endTime - store.startTime : 0;
+
+  // 결과 화면용 스냅샷 — 게임 종료 후 안정적
+  const correctSelections = store.correctSelections;
+  // 기본: 암기 단계에서 보여준 단어(=선택 대상)
+  // 리버스: 보여주지 않은 단어(=선택 대상, notShown=true)
+  const targetWords = mode === 'basic'
+    ? store.shownWords
+    : store.allWords.filter(w => w.notShown);
 
   useEffect(() => {
     if (!store.endTime) {
@@ -33,138 +40,137 @@ export function Result() {
   }, []);
 
   const handlePlayAgain = () => {
+    resetGame();   // 단어 재셔플 (모드/난이도 유지)
+    startGame();   // 바로 암기 단계 시작
+    navigate('/game');
+  };
+
+  const handleGoHome = () => {
     resetGame();
     navigate('/');
   };
 
   const formatTime = (ms: number) => `${(ms / 1000).toFixed(1)}초`;
 
-  const getScoreEmoji = (s: number) => {
-    if (s >= 700) return '👏';
-    if (s >= 400) return '👍';
-    return '💪';
-  };
-
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center px-4 py-8">
-      <motion.div
-        initial={{ opacity: 0, scale: 0.8 }}
-        animate={{ opacity: 1, scale: 1 }}
-        className="text-center mb-6"
-      >
-        <span className="text-6xl">{isSuccess ? '🏆' : getScoreEmoji(score)}</span>
-      </motion.div>
-
+    <div className="h-screen overflow-y-auto safe-top safe-bottom">
+      <div className="min-h-full flex flex-col items-center justify-center px-4 py-8">
+      <div className="flex flex-col items-center w-full max-w-sm">
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.2 }}
-        className="bg-white rounded-3xl p-6 w-full max-w-sm shadow-2xl"
+        transition={{ delay: 0.1 }}
+        className="bg-white rounded-3xl p-6 w-full shadow-2xl"
       >
-        {/* 성공/실패 배너 */}
-        <motion.div
-          initial={{ opacity: 0, y: -8 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.3 }}
-          className={`flex items-center justify-center gap-2 rounded-2xl py-3 mb-5 ${isSuccess
-              ? 'bg-green-50 text-green-700 border border-green-200'
-              : 'bg-red-50 text-red-700 border border-red-200'
-            }`}
-        >
-          <span className="text-xl">{isSuccess ? '✅' : '❌'}</span>
-          <span className="font-bold text-lg">{isSuccess ? '성공!' : '실패'}</span>
-          {!isSuccess && (
-            <span className="text-sm text-red-500 ml-1">오답 초과로 게임 종료</span>
-          )}
-        </motion.div>
-
-        <h2 className="text-2xl font-bold text-center text-gray-800 mb-6">게임 결과</h2>
-
+        {/* 성공/실패 + 점수 */}
         <div className="text-center mb-6">
-          <p className="text-sm text-gray-500 mb-1">최종 점수</p>
+          <div className={`inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full text-sm font-bold mb-4 ${isSuccess ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-600'
+            }`}>
+            <span>{isSuccess ? '✅' : '❌'}</span>
+            <span>{isSuccess ? '성공!' : '실패'}</span>
+          </div>
+          <p className="text-xs text-gray-400 mb-1">최종 점수</p>
           <p className="text-5xl font-bold text-purple-600">{score.toLocaleString()}</p>
-          {mode === 'reverse' && (
-            <p className="text-sm text-purple-400 mt-1">
-              리버스 보너스 ×{DIFFICULTY_CONFIG[store.difficulty].reverseMultiplier} 적용
-            </p>
-          )}
         </div>
 
+        {/* 통계 */}
+        <div className="grid grid-cols-2 gap-3 mb-3">
+          <div className="bg-gray-50 rounded-xl p-3 text-center">
+            <p className="text-xs text-gray-400 mb-1">모드</p>
+            <p className="text-base font-semibold text-gray-800">
+              {mode === 'basic' ? '기본' : '리버스'}
+              {mode === 'reverse' && (
+                <span className="text-purple-500 text-sm ml-1">×{DIFFICULTY_CONFIG[store.difficulty].reverseMultiplier}</span>
+              )}
+            </p>
+          </div>
+          <div className="bg-gray-50 rounded-xl p-3 text-center">
+            <p className="text-xs text-gray-400 mb-1">난이도</p>
+            <p className="text-base font-semibold text-gray-800">
+              {store.difficulty === 'easy' ? '🟢 EASY' : store.difficulty === 'medium' ? '🟡 MEDIUM' : '🔴 HARD'}
+            </p>
+          </div>
+        </div>
         <div className="grid grid-cols-3 gap-3 mb-6">
           <div className="bg-gray-50 rounded-xl p-3 text-center">
-            <p className="text-xs text-gray-500 mb-1">소요 시간</p>
-            <p className="text-lg font-semibold text-gray-800">{formatTime(timeMs)}</p>
+            <p className="text-xs text-gray-400 mb-1">소요 시간</p>
+            <p className="text-base font-semibold text-gray-800">{formatTime(timeMs)}</p>
           </div>
           <div className="bg-gray-50 rounded-xl p-3 text-center">
-            <p className="text-xs text-gray-500 mb-1">오답</p>
-            <p className="text-lg font-semibold text-red-500">{wrongCount}회</p>
+            <p className="text-xs text-gray-400 mb-1">오답</p>
+            <p className="text-base font-semibold text-red-500">{wrongCount}회</p>
           </div>
           <div className="bg-gray-50 rounded-xl p-3 text-center">
-            <p className="text-xs text-gray-500 mb-1">다시보기</p>
-            <p className="text-lg font-semibold text-orange-500">{reviewCount}회</p>
+            <p className="text-xs text-gray-400 mb-1">다시보기</p>
+            <p className={`text-base font-semibold ${reviewCount > 0 ? 'text-amber-500' : 'text-gray-400'}`}>
+              {reviewCount}회
+            </p>
           </div>
         </div>
 
-        {isSuccess === false && missedWords.length > 0 && (
+        {/* 단어 결과 */}
+        {targetWords.length > 0 && (
           <div className="mb-6">
-            <p className="text-sm text-gray-500 mb-2">
-              선택하지 못한 단어 ({missedWords.length}개)
-            </p>
+            <div className="flex items-center justify-between mb-2">
+              <p className="text-sm text-gray-500">
+                {mode === 'basic' ? '암기 단어' : '찾아야 할 단어'}
+              </p>
+              <p className="text-xs text-gray-400">
+                <span className="text-green-600 font-medium">{correctSelections.length}</span>
+                {' / '}{targetWords.length}개
+              </p>
+            </div>
             <div className="flex flex-wrap gap-2">
-              {missedWords.map((word) => (
-                <span key={word.id} className="px-3 py-1 bg-red-50 text-red-600 rounded-full text-sm">
-                  {word.word}
-                </span>
-              ))}
+              {targetWords.map((word) => {
+                const selected = correctSelections.includes(word.id);
+                return (
+                  <span
+                    key={word.id}
+                    className={`flex items-center gap-1 px-3 py-1 rounded-full text-sm font-medium ${selected ? 'bg-green-100 text-green-700' : 'bg-red-50 text-red-400'
+                      }`}
+                  >
+                    <span className="text-xs">{selected ? '✓' : '✗'}</span>
+                    {word.word}
+                  </span>
+                );
+              })}
             </div>
           </div>
         )}
 
-        <div className="text-center text-sm text-gray-500 mb-6">
-          <p>카테고리: {category?.name}</p>
-          <p>
-            {mode === 'basic' ? '기본' : '리버스'} ·{' '}
-            {store.difficulty === 'easy' ? '🟢 EASY' : store.difficulty === 'medium' ? '🟡 MEDIUM' : '🔴 HARD'}
-          </p>
-        </div>
-
-        {/* 자동 등록 상태 표시 */}
-        <div className="mb-4">
-          {submitState === 'submitting' && (
-            <p className="text-center text-sm text-gray-400">점수 등록 중...</p>
-          )}
-          {submitState === 'done' && (
-            <motion.p
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              className="text-center text-sm text-green-600 font-medium"
-            >
-              ✓ 리더보드에 등록되었습니다
-            </motion.p>
-          )}
-          {submitState === 'error' && (
-            <p className="text-center text-sm text-red-400">등록에 실패했습니다</p>
-          )}
-        </div>
+        {/* 등록 오류만 표시 */}
+        {submitState === 'error' && (
+          <p className="text-center text-xs text-red-400 mb-4">점수 등록에 실패했습니다</p>
+        )}
 
         <div className="space-y-3">
           <motion.button
-            onClick={() => navigate('/leaderboard')}
+            onClick={handlePlayAgain}
             className="w-full py-4 bg-gradient-to-r from-purple-600 to-pink-600 text-white font-semibold rounded-xl shadow-lg"
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
           >
-            리더보드 보기
+            다시 플레이
           </motion.button>
 
-          <button
-            onClick={handlePlayAgain}
-            className="w-full py-3 border-2 border-purple-500 text-purple-600 font-semibold rounded-xl hover:bg-purple-50 transition-colors"
-          >
-            다시 플레이
-          </button>
+          <div className="grid grid-cols-2 gap-3">
+            <button
+              onClick={() => navigate('/leaderboard')}
+              className="py-3 border-2 border-purple-400 text-purple-600 font-semibold rounded-xl hover:bg-purple-50 transition-colors text-sm"
+            >
+              리더보드
+            </button>
+            <button
+              onClick={handleGoHome}
+              className="py-3 border-2 border-gray-300 text-gray-500 font-semibold rounded-xl hover:bg-gray-50 transition-colors text-sm"
+            >
+              홈으로
+            </button>
+          </div>
         </div>
       </motion.div>
+      </div>
+      </div>
     </div>
   );
 }

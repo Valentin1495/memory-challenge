@@ -4,6 +4,7 @@ import type { Word, Difficulty } from '../../types';
 import { WORD_VARIANTS } from './wordAnimations';
 
 const COUNTDOWN_FROM = 3;
+const COUNTDOWN_EXIT_DURATION_MS = 300;
 
 type DisplayPhase = 'countdown' | 'flashing' | 'done';
 
@@ -51,7 +52,10 @@ export function WordDisplay({ words, wordDurationMs, difficulty, onComplete }: W
       }, variants.blankDurationMs);
       return () => clearTimeout(id);
     } else {
-      const id = setTimeout(() => setShowWord(false), wordDurationMs);
+      const displayDuration = currentIndex === 0
+        ? wordDurationMs + COUNTDOWN_EXIT_DURATION_MS
+        : wordDurationMs;
+      const id = setTimeout(() => setShowWord(false), displayDuration);
       return () => clearTimeout(id);
     }
   }, [displayPhase, showWord, currentIndex, words.length, wordDurationMs, variants.blankDurationMs]);
@@ -69,7 +73,6 @@ export function WordDisplay({ words, wordDurationMs, difficulty, onComplete }: W
               ? `${currentIndex + 1} / ${words.length}`
               : displayPhase === 'countdown' ? '준비' : '완료'}
           </span>
-          <span>{Math.round(progress)}%</span>
         </div>
         <div className="h-2 bg-white/20 rounded-full overflow-hidden">
           <motion.div
@@ -93,7 +96,7 @@ export function WordDisplay({ words, wordDurationMs, difficulty, onComplete }: W
               initial={{ scale: 1.4, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.6, opacity: 0 }}
-              transition={{ duration: 0.3, ease: 'easeOut' }}
+              transition={{ duration: COUNTDOWN_EXIT_DURATION_MS / 1000, ease: 'easeOut' }}
               className="absolute inset-0 flex items-center justify-center"
             >
               <div className="bg-white/20 backdrop-blur-sm rounded-3xl w-full h-full flex flex-col items-center justify-center gap-2">
